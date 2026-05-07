@@ -1,6 +1,7 @@
 import { Plane, ShieldCheck } from 'lucide-react';
 import { FormEvent, useState } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
+import { isAuthenticated, setAuthenticated } from '../auth';
 import logo from '../assets/logo.png';
 
 const DEMO_USERNAME = 'Synapse';
@@ -10,7 +11,7 @@ export function LoginPage() {
   const navigate = useNavigate();
   const [logoError, setLogoError] = useState(false);
   const [error, setError] = useState('');
-  const authenticated = localStorage.getItem('synapse-authenticated') === 'true';
+  const authenticated = isAuthenticated();
 
   if (authenticated) {
     return <Navigate to="/normal-operation" replace />;
@@ -27,7 +28,7 @@ export function LoginPage() {
       return;
     }
 
-    localStorage.setItem('synapse-authenticated', 'true');
+    setAuthenticated();
     navigate('/normal-operation', { replace: true });
   };
 

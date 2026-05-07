@@ -1,11 +1,12 @@
 import { useState } from 'react';
 import { Navigate, Outlet } from 'react-router-dom';
+import { isAuthenticated } from '../../auth';
 import { Sidebar } from '../Sidebar/Sidebar';
 import { Topbar } from '../Topbar/Topbar';
 
 export function Layout() {
   const [collapsed, setCollapsed] = useState(true);
-  const authenticated = localStorage.getItem('synapse-authenticated') === 'true';
+  const authenticated = isAuthenticated();
 
   if (!authenticated) {
     return <Navigate to="/login" replace />;

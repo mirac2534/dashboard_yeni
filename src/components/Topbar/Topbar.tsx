@@ -1,6 +1,7 @@
 import { LogOut, UserRound } from 'lucide-react';
 import { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { clearAuthentication } from '../../auth';
 
 const titles: Record<string, string> = {
   '/normal-operation': 'Problemsiz Operasyon',
@@ -17,7 +18,7 @@ export function Topbar() {
   const location = useLocation();
 
   const logout = () => {
-    localStorage.removeItem('synapse-authenticated');
+    clearAuthentication();
     navigate('/login', { replace: true });
   };
 
