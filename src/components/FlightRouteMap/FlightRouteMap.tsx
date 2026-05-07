@@ -130,15 +130,8 @@ export function FlightRouteMap() {
         fill: am5.color(0xffc857),
         stroke: am5.color(0xffffff),
         strokeWidth: 2,
-        tooltipText: isOrigin ? `${data.title}\n(Click me!)` : data.title,
-        cursorOverStyle: isOrigin ? 'pointer' : undefined,
+        tooltipText: data.title,
       });
-
-      if (isOrigin) {
-        circle.events.on('click', () => {
-          setRouteIndex((value) => (value + 1) % routes.length);
-        });
-      }
 
       return am5.Bullet.new(rootRef, { sprite: circle });
     });
@@ -223,9 +216,6 @@ export function FlightRouteMap() {
           <p>{activeRoute.name} · {activeRoute.description}</p>
         </div>
         <div className="route-map-panel__actions">
-          <button className="button button--ghost" onClick={() => setRouteIndex((value) => (value + 1) % routes.length)} type="button">
-            Rotayı Değiştir
-          </button>
           <button className="button button--ghost" onClick={() => setProjectionMode((value) => (value === 'map' ? 'globe' : 'map'))} type="button">
             {projectionMode === 'map' ? 'Globe' : 'Harita'}
           </button>
