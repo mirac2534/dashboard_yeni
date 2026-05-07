@@ -2,6 +2,7 @@ import type { EChartsOption } from 'echarts';
 import { AlertTriangle, BatteryCharging, CheckCircle2, RadioTower, Thermometer } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { ChartCard } from '../components/ChartCard/ChartCard';
+import { FlightRouteMap } from '../components/FlightRouteMap/FlightRouteMap';
 import { PipelineFlow } from '../components/PipelineFlow/PipelineFlow';
 import { SimulationControls } from '../components/SimulationControls/SimulationControls';
 import { normalOperationRuntime } from '../simulation/normalOperationRuntime';
@@ -220,6 +221,8 @@ export function NormalOperationPage() {
         <ChartCard title="Zamana Göre İrtifa" subtitle="Feet cinsinden irtifa takibi" option={lineOptions.altitude} />
         <ChartCard title="Zamana Göre Hava Hızı" subtitle="Knot cinsinden hız takibi" option={lineOptions.speed} />
       </section>
+
+      <FlightRouteMap />
 
       <section className="event-log-panel">
         <div>

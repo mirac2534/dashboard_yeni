@@ -1,13 +1,18 @@
 import type { FlightPhase, TelemetryPacket } from './telemetryTypes';
 
-const START_LATITUDE = 40.982;
-const START_LONGITUDE = 29.125;
+const START_LATITUDE = 40.8986;
+const START_LONGITUDE = 29.3092;
 const FLIGHT_ID = 'SYN-DEMO-2026-001';
 const VEHICLE_ID = 'SYN-UAV-BBX-01';
 const GENESIS_HASH = '0'.repeat(64);
-const DEG_PER_METER_LAT = 1 / 111_320;
 const SEA_LEVEL_AIR_DENSITY = 1.225;
 const KMH_TO_METERS_PER_SECOND = 1 / 3.6;
+
+const DEMO_ROUTE = [
+  { latitude: START_LATITUDE, longitude: START_LONGITUDE },
+  { latitude: 40.1426, longitude: 29.9793 },
+  { latitude: 39.7667, longitude: 30.5256 },
+];
 
 function clamp(value: number, min: number, max: number) {
   return Math.min(max, Math.max(min, value));
@@ -29,6 +34,30 @@ function lerp(start: number, end: number, ratio: number) {
 
 function wave(t: number, period: number, amplitude: number, phase = 0) {
   return Math.sin(t / period + phase) * amplitude;
+}
+
+function interpolateRoute(t: number) {
+  const progress = smoothstep(clamp(t, 0, 180) / 180);
+  const segmentCount = DEMO_ROUTE.length - 1;
+  const scaledProgress = progress * segmentCount;
+  const segmentIndex = Math.min(segmentCount - 1, Math.floor(scaledProgress));
+  const segmentProgress = scaledProgress - segmentIndex;
+  const start = DEMO_ROUTE[segmentIndex];
+  const end = DEMO_ROUTE[segmentIndex + 1];
+
+  return {
+    latitude: lerp(start.latitude, end.latitude, segmentProgress),
+    longitude: lerp(start.longitude, end.longitude, segmentProgress),
+  };
+}
+
+function bearingBetween(start: { latitude: number; longitude: number }, end: { latitude: number; longitude: number }) {
+  const startLat = (start.latitude * Math.PI) / 180;
+  const endLat = (end.latitude * Math.PI) / 180;
+  const deltaLon = ((end.longitude - start.longitude) * Math.PI) / 180;
+  const y = Math.sin(deltaLon) * Math.cos(endLat);
+  const x = Math.cos(startLat) * Math.sin(endLat) - Math.sin(startLat) * Math.cos(endLat) * Math.cos(deltaLon);
+  return ((Math.atan2(y, x) * 180) / Math.PI + 360) % 360;
 }
 
 function hash64(input: string) {
@@ -111,20 +140,6 @@ function flapAt(t: number, phase: FlightPhase) {
   return t < 174 ? 28 : 18;
 }
 
-function positionFromPrevious(t: number, previous: TelemetryPacket | undefined, speedMps: number, headingDeg: number) {
-  if (!previous) {
-    return { latitude: START_LATITUDE, longitude: START_LONGITUDE };
-  }
-
-  const deltaSeconds = Math.max(1, t - previous.elapsedSeconds);
-  const yawRad = (headingDeg * Math.PI) / 180;
-  const northMeters = Math.cos(yawRad) * speedMps * deltaSeconds;
-  const eastMeters = Math.sin(yawRad) * speedMps * deltaSeconds;
-  const latitude = previous.gps.latitude + northMeters * DEG_PER_METER_LAT;
-  const longitude = previous.gps.longitude + eastMeters / (111_320 * Math.cos((latitude * Math.PI) / 180));
-  return { latitude, longitude };
-}
-
 export function generateTelemetryAtSecond(t: number, previous?: TelemetryPacket): TelemetryPacket {
   const second = clamp(Math.round(t), 0, 180);
   const phase = getFlightPhase(second);
@@ -134,8 +149,9 @@ export function generateTelemetryAtSecond(t: number, previous?: TelemetryPacket)
   const trueAirspeedKmh = speedAt(second);
   const speedMps = trueAirspeedKmh * KMH_TO_METERS_PER_SECOND;
   const accelerationMps2 = second > 0 ? (speedAt(second) - speedAt(second - 1)) * KMH_TO_METERS_PER_SECOND : 0;
-  const headingDeg = (82 + wave(second, 45, 1.4) + wave(second, 19, 0.5) + 360) % 360;
-  const position = positionFromPrevious(second, previous, speedMps, headingDeg);
+  const position = interpolateRoute(second);
+  const nextPosition = interpolateRoute(Math.min(180, second + 1));
+  const headingDeg = (bearingBetween(position, nextPosition) + wave(second, 45, 0.8) + wave(second, 19, 0.3) + 360) % 360;
   const gpsAltitude = clamp(altitude + wave(second, 7, 1.8) + wave(second, 3, 0.5), 0, 10_000);
   const pressureHpa = 1013.25 * Math.pow(1 - (0.0065 * altitude) / 288.15, 5.255);
   const temperatureC = 15 - altitude * 0.0065 + wave(second, 23, 0.6);
